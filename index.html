@@ -27,7 +27,7 @@ pre { background: #eee; padding: 10px; border-radius: 4px; white-space: pre-wrap
 <div id="results"></div>
 <div style="margin-top:40px; font-size:14px; color:#555; text-align:center;">
 Powered by MyCRM Technology Support
-<div style="margin-top:10px; font-size:11px; color:#aaa; text-align:center;">v1.6.1</div>
+<div style="margin-top:10px; font-size:11px; color:#aaa; text-align:center;">v1.6.0</div>
 </div>
 <div id="instructions-copyable" class="instructions" style="display:none;">
 <p style="font-size:16px; font-weight:bold; margin-top:0;">DNS Records Instructions (Copy & Apply)</p>
@@ -41,7 +41,7 @@ Powered by MyCRM Technology Support
 </div>
 <script>
 async function fetchDNS(name, type){
-const base = "<REDACTED> + "cloudflare-dns.com/dns-query"; const url = base + "?name=" + name + "&type=" + type;
+const url = "https://cloudflare-dns.com/dns-query?name=" + name + "&type=" + type;
 const res = await fetch(url, { headers: { "Accept": "application/dns-json" } });
 const data = await res.json();
 return data.Answer ? data.Answer.map(r => r.data.replace(/"/g, "")) : [];
@@ -106,21 +106,18 @@ const dmarcResult = await checkAutoAppend(dmarcHost, "TXT", domain);
 if(dmarcResult.autoAppend) globalAutoAppend = true;
 const dmarcRecords = dmarcResult.records;
 const hasDupDmarc = dmarcRecords.length !== new Set(dmarcRecords).size;
-const dmarcPolicies = ["p=none", "p=quarantine", "p=reject"];
-const dmarcPolicyMatches = dmarcRecords.filter(r => r.includes("v=DMARC1")).flatMap(r => dmarcPolicies.filter(p => r.includes(p)));
-const hasDupPolicy = dmarcPolicyMatches.length > 1; const hasInvalidTag = dmarcRecords.some(r => /\bt=n\b/.test(r)); const dmarcPass = dmarcRecords.some(r => r.includes("v=DMARC1") && (r.includes("p=none") || r.includes("p=quarantine") || r.includes("p=reject")) ) && !dmarcResult.autoAppend && !hasDupDmarc && !hasDupPolicy && !hasInvalidTag;
+const dmarcPass = dmarcRecords.some(r =>
+r.includes("v=DMARC1") && (r.includes("p=none") || r.includes("p=quarantine") || r.includes("p=reject"))
+) && !dmarcResult.autoAppend && !hasDupDmarc;
 const dmarcAutoWarn = dmarcResult.autoAppend ?
 "<br><small style='color:orange;'>⚠️ Auto-appending detected on DMARC record!<br>_dmarc." + domain + "." + domain + " (auto-append detected)<br><br>Kindly advise to input:<br>_dmarc<br>So it would resolve correctly.</small>" : "";
-const dmarcDupWarn = hasDupDmarc ? "
-<small style='color:orange;'>⚠️ Duplicate DMARC record detected! Please remove the duplicate entry and keep only one.</small>" : ""; const dmarcDupPolicyWarn = hasDupPolicy ? "
-<small style='color:orange;'>⚠️ Conflicting DMARC policies detected! Multiple p= values found: " + dmarcPolicyMatches.join(", ") + ". A DMARC record must only have one p= policy. Please remove the conflicting entries and keep only one.</small>" : ""; const dmarcInvalidTagWarn = hasInvalidTag ? "
-<small style='color:orange;'>⚠️ Invalid tag detected: <strong>t=n</strong> is not a recognised DMARC tag and must be removed from the record.</small>" : "";
-resultsHTML += "<div class='box'>DMARC: <span class='" + (dmarcPass?"pass":"fail") + "'>" + (dmarcPass?"PASS":"FAIL") + "</span>" + dmarcAutoWarn + dmarcDupWarn + dmarcDupPolicyWarn + dmarcInvalidTagWarn + "
-<small>Expected host: _dmarc." + domain + "</small>
-<small>Raw value: " + (dmarcRecords.join(", ") || noRecord()) + "</small></div>";
+const dmarcDupWarn = hasDupDmarc ?
+"<br><small style='color:orange;'>⚠️ Duplicate DMARC record detected! Please remove the duplicate entry and keep only one.</small>" : "";
+resultsHTML += "<div class='box'>DMARC: <span class='" + (dmarcPass?"pass":"fail") + "'>" + (dmarcPass?"PASS":"FAIL") + "</span>" + dmarcAutoWarn + dmarcDupWarn + "<br><small>Expected host: _dmarc." + domain + "</small><br><small>Raw value: " + (dmarcRecords.join(", ") || noRecord()) + "</small></div>";
 if(!dmarcPass){
 const dmarcHostVal = dmarcResult.autoAppend ? "_dmarc" : "_dmarc." + domain;
-if(hasDupDmarc){ copyable.push("DMARC TXT Record - Duplicate Detected:\n\nA duplicate DMARC record was found. Please remove one of the duplicate entries and keep only:\n\nType: TXT\nHost: _dmarc\nValue: v=DMARC1; p=none;"); } else if(hasDupPolicy){ copyable.push("DMARC TXT Record - Conflicting Policies Detected:\n\nMultiple p= policy values were found: " + dmarcPolicyMatches.join(", ") + ".\nA DMARC record must only contain one p= policy.\nPlease update your DMARC record to keep only one policy value:\n\nType: TXT\nHost: _dmarc\nValue: v=DMARC1; p=none;"); } else if(hasInvalidTag){ copyable.push("DMARC TXT Record - Invalid Tag Detected:\n\nThe tag t=n was found in your DMARC record. This is not a recognised DMARC tag and must be removed.\nPlease update your DMARC record to:\n\nType: TXT\nHost: _dmarc\nValue: v=DMARC1; p=none;");
+if(hasDupDmarc){
+copyable.push("DMARC TXT Record - Duplicate Detected:\n\nA duplicate DMARC record was found. Please remove one of the duplicate entries and keep only:\n\nType: TXT\nHost: _dmarc\nValue: v=DMARC1; p=none;");
 } else {
 copyable.push("DMARC TXT Record:\n\nType: TXT\nHost: " + dmarcHostVal + "\nValue: v=DMARC1; p=none;");
 }
@@ -148,8 +145,8 @@ const dkimDupWarn = (hasDupDkim1 || hasDupDkim2) ?
 (hasDupDkim2 ? " mte2._domainkey." + domain + ": Duplicate detected." : "") +
 " Please remove the duplicate entries and keep only one of each.</small>" : "";
 resultsHTML += "<div class='box'>DKIM: <span class='" + (dkimPass?"pass":"fail") + "'>" + (dkimPass?"PASS":"FAIL") + "</span>" + dkimAutoWarn + dkimDupWarn +
-"<br><small>mte1._domainkey." + domain + " → " + (dkim1Result.autoAppend ? "mte1._domainkey." + domain + "." + domain + " (auto-append detected)" : (dkim1Result.records.join(", ") || noRecord())) + "</small>" +
-"<br><small>mte2._domainkey." + domain + " → " + (dkim2Result.autoAppend ? "mte2._domainkey." + domain + "." + domain + " (auto-append detected)" : (dkim2Result.records.join(", ") || noRecord())) + "</small></div>";
+"<br><small>mte1._domainkey." + domain + " -> " + (dkim1Result.autoAppend ? "mte1._domainkey." + domain + "." + domain + " (auto-append detected)" : (dkim1Result.records.join(", ") || noRecord())) + "</small>" +
+"<br><small>mte2._domainkey." + domain + " -> " + (dkim2Result.autoAppend ? "mte2._domainkey." + domain + "." + domain + " (auto-append detected)" : (dkim2Result.records.join(", ") || noRecord())) + "</small></div>";
 if(!dkimPass){
 let dkimInstructions = "DKIM CNAME Records:\n";
 if(!dkim1Pass){ dkimInstructions += hasDupDkim1 ? "\nmte1._domainkey." + domain + ": Duplicate found. Keep only:\nHost: mte1._domainkey\nValue: dkim1.mandrillapp.com" : "\nType: CNAME\nHost: " + (dkim1Result.autoAppend ? "mte1._domainkey" : "mte1._domainkey." + domain) + "\nValue: dkim1.mandrillapp.com"; }
@@ -185,9 +182,9 @@ const sgAutoWarn = sgAutoAppend ?
 (sg12Result.autoAppend ? "<br>sg12._domainkey" : "") +
 "<br>So it would resolve correctly.</small>" : "";
 resultsHTML += "<div class='box'>CustomerIO/SendGrid: <span class='" + (allCioPass?"pass":"fail") + "'>" + (allCioPass?"PASS":"FAIL") + "</span>" + sgAutoWarn +
-"<br><small>customerio." + domain + " → " + (cioResult.autoAppend ? "customerio." + domain + "." + domain + " (auto-append detected)" : (cioResult.records.join(", ") || noRecord())) + "</small>" +
-"<br><small>sg1._domainkey." + domain + " → " + (sg1Result.autoAppend ? "sg1._domainkey." + domain + "." + domain + " (auto-append detected)" : (sg1Result.records.join(", ") || noRecord())) + "</small>" +
-"<br><small>sg12._domainkey." + domain + " → " + (sg12Result.autoAppend ? "sg12._domainkey." + domain + "." + domain + " (auto-append detected)" : (sg12Result.records.join(", ") || noRecord())) + "</small></div>";
+"<br><small>customerio." + domain + " -> " + (cioResult.autoAppend ? "customerio." + domain + "." + domain + " (auto-append detected)" : (cioResult.records.join(", ") || noRecord())) + "</small>" +
+"<br><small>sg1._domainkey." + domain + " -> " + (sg1Result.autoAppend ? "sg1._domainkey." + domain + "." + domain + " (auto-append detected)" : (sg1Result.records.join(", ") || noRecord())) + "</small>" +
+"<br><small>sg12._domainkey." + domain + " -> " + (sg12Result.autoAppend ? "sg12._domainkey." + domain + "." + domain + " (auto-append detected)" : (sg12Result.records.join(", ") || noRecord())) + "</small></div>";
 if(!allCioPass){
 let msg = "CustomerIO / SendGrid CNAME Records:\n";
 if(!cioPass){ msg += cioResult.autoAppend ? "\nType: CNAME\nHost: customerio\nValue: u11692406.wl157.sendgrid.net" : cioResult.records.length === 0 ? "\nType: CNAME\nHost: customerio." + domain + "\nValue: u11692406.wl157.sendgrid.net" : hasDuplicateCio ? "\ncustomerio." + domain + ": Duplicate records found." : hasSpaceCio ? "\ncustomerio." + domain + ": Space found in record." : "\ncustomerio." + domain + ": Incorrect value - expected u11692406.wl157.sendgrid.net"; }
