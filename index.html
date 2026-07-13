@@ -3,126 +3,12 @@
 <head>
 <title>DNS Checker Tool</title>
 <style>
-body { font-family: Arial; margin: 0; background: #f5f5f5; }
-
-/* Banner */
-.banner {
-  background: #1a1a1a;
-  color: #fff;
-  padding: 15px 20px;
-  text-align: center;
-  border-bottom: 3px solid #c0392b;
-}
-.banner .label {
-  font-size: 13px;
-  letter-spacing: 2px;
-  text-transform: uppercase;
-  color: #f39c12;
-  margin-bottom: 6px;
-}
-.banner .countdown {
-  font-size: 28px;
-  font-weight: bold;
-  color: #e74c3c;
-  letter-spacing: 4px;
-  font-family: monospace;
-  margin-bottom: 8px;
-}
-.banner .new-home-msg {
-  font-size: 13px;
-  color: #ccc;
-  margin-top: 6px;
-  margin-bottom: 8px;
-}
-.banner-btns {
-  display: flex;
-  justify-content: center;
-  gap: 10px;
-  margin-top: 8px;
-}
-.visit-btn {
-  cursor: pointer;
-  padding: 6px 14px;
-  background: #0070f3;
-  color: #fff;
-  border: none;
-  border-radius: 4px;
-  font-size: 13px;
-  font-weight: bold;
-  text-decoration: none;
-  display: inline-block;
-}
-.visit-btn:hover { background: #005bb5; }
-.copy-link-btn {
-  cursor: pointer;
-  padding: 6px 14px;
-  background: #f39c12;
-  color: #1a1a1a;
-  border: none;
-  border-radius: 4px;
-  font-size: 13px;
-  font-weight: bold;
-  animation: pulse-btn 1.5s infinite;
-}
-.copy-link-btn:hover { background: #e67e22; }
-@keyframes pulse-btn {
-  0% { box-shadow: 0 0 0 0 rgba(243,156,18,0.6); }
-  70% { box-shadow: 0 0 0 8px rgba(243,156,18,0); }
-  100% { box-shadow: 0 0 0 0 rgba(243,156,18,0); }
-}
-.pulse {
-  display: inline-block;
-  width: 10px;
-  height: 10px;
-  background: #e74c3c;
-  border-radius: 50%;
-  margin-right: 8px;
-  animation: pulse 1s infinite;
-}
-@keyframes pulse {
-  0% { opacity: 1; transform: scale(1); }
-  50% { opacity: 0.4; transform: scale(1.3); }
-  100% { opacity: 1; transform: scale(1); }
-}
-
-/* Expired screen */
-.expired {
-  display: none;
-  background: #1a1a1a;
-  color: #fff;
-  text-align: center;
-  padding: 80px 40px;
-  min-height: 100vh;
-}
-.expired h1 { color: #e74c3c; font-size: 42px; letter-spacing: 4px; }
-.expired p { color: #ccc; font-size: 16px; }
-.expired a {
-  display: inline-block;
-  margin-top: 20px;
-  padding: 12px 24px;
-  background: #f39c12;
-  color: #1a1a1a;
-  font-weight: bold;
-  border-radius: 6px;
-  text-decoration: none;
-  font-size: 15px;
-}
-.expired a:hover { background: #e67e22; }
-.expired .static {
-  font-family: monospace;
-  font-size: 11px;
-  color: #333;
-  margin-top: 40px;
-  letter-spacing: 1px;
-}
-
-/* Tool */
-.tool { padding: 40px; }
+body { font-family: Arial; margin: 40px; }
 .pass { color: green; font-weight: bold; }
 .fail { color: red; font-weight: bold; }
 .no-record { color: red; }
 .warn { color: orange; font-weight: bold; }
-.box { border: 1px solid #ccc; padding: 15px; margin-top: 15px; border-radius: 6px; text-align: left; background: #fff; }
+.box { border: 1px solid #ccc; padding: 15px; margin-top: 15px; border-radius: 6px; text-align: left; }
 .copy { cursor: pointer; padding: 5px 10px; margin-top: 5px; background: #0070f3; color: #fff; border: none; border-radius: 4px; }
 .copy:hover { background: #005bb5; }
 .instructions { border: 1px solid #ccc; background: #f9f9f9; padding: 15px; margin-top: 30px; border-radius: 6px; }
@@ -132,39 +18,10 @@ pre { background: #eee; padding: 10px; border-radius: 4px; white-space: pre-wrap
 </style>
 </head>
 <body>
-
-<!-- Banner -->
-<div class="banner" id="banner">
-  <div class="label"><span class="pulse"></span> This tool will be decommissioned in:</div>
-  <div class="countdown" id="countdown">--d --h --m --s</div>
-  <div class="new-home-msg">This tool has a new home. Please update your bookmark.</div>
-  <div class="banner-btns">
-    <a class="visit-btn" href="<REDACTED> target="_blank">🔗 Visit New Link</a>
-    <button class="copy-link-btn" onclick="copyNewLink()">📋 Copy New Link</button>
-  </div>
-</div>
-
-<!-- Expired screen -->
-<div class="expired" id="expired">
-  <h1>⚠️ SERVICE ENDED</h1>
-  <p>This tool has been decommissioned.</p>
-  <p>The DNS Checker Tool has a new permanent home.</p>
-  <a href="<REDACTED> target="_blank">🔖 Go to the new DNS Checker Tool</a>
-  <div class="static">
-    ░░▒▒▓▓████████████████████████████████████████▓▓▒▒░░
-
-    SIGNAL LOST — PLEASE UPDATE YOUR BOOKMARK
-
-    ░░▒▒▓▓████████████████████████████████████████▓▓▒▒░░
-  </div>
-</div>
-
-<!-- Tool -->
-<div class="tool" id="tool">
 <div class="container">
 <p style="text-align:center; font-size:24px; font-weight:bold;">DNS Checker Tool</p>
 <div style="display:flex; justify-content:center; align-items:center; gap:8px; margin-bottom:20px;">
-<input id="domain" placeholder="Enter domain or email" style="width:300px; padding:8px;">
+<input id="domain" placeholder="Enter domain" style="width:300px; padding:8px;">
 <button onclick="checkDNS()" style="padding:8px 12px;">Check DNS</button>
 </div>
 <div id="results"></div>
@@ -182,40 +39,9 @@ Powered by MyCRM Technology Support
 <pre id="nonCopyableInstructions"></pre>
 </div>
 </div>
-</div>
-
 <script>
-const retireDate = new Date("2026-07-18T07:30:00Z");
-const newLink = "<REDACTED>
-
-function updateCountdown() {
-  const now = new Date();
-  const diff = retireDate - now;
-  if (diff <= 0) {
-    document.getElementById("banner").style.display = "none";
-    document.getElementById("tool").style.display = "none";
-    document.getElementById("expired").style.display = "block";
-    return;
-  }
-  const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-  const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-  const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-  const seconds = Math.floor((diff % (1000 * 60)) / 1000);
-  document.getElementById("countdown").textContent =
-    String(days).padStart(2, "0") + "d " +
-    String(hours).padStart(2, "0") + "h " +
-    String(minutes).padStart(2, "0") + "m " +
-    String(seconds).padStart(2, "0") + "s";
-}
-updateCountdown();
-setInterval(updateCountdown, 1000);
-
-function copyNewLink() {
-  navigator.clipboard.writeText(newLink).then(() => alert("New link copied! Please update your bookmark."));
-}
-
 async function fetchDNS(name, type){
-const url = "<REDACTED> + name + "&type=" + type;
+const url = "https://cloudflare-dns.com/dns-query?name=" + name + "&type=" + type;
 const res = await fetch(url, { headers: { "Accept": "application/dns-json" } });
 const data = await res.json();
 return data.Answer ? data.Answer.map(r => r.data.replace(/"/g, "")) : [];
@@ -242,8 +68,8 @@ else { details.style.display = "none"; toggle.innerText = "▼ Show more"; }
 }
 
 async function checkDNS(){
-const domain = document.getElementById("domain").value.trim().toLowerCase().replace(/^https?:\/\//, "").replace(/\/$/, "").split("@").pop();
-if(!domain) return alert("Please enter a domain or email");
+const domain = document.getElementById("domain").value.trim();
+if(!domain) return alert("Please enter a domain");
 let resultsHTML = "";
 const copyable = [];
 const nonCopyable = [];
@@ -256,9 +82,7 @@ const txtRecords = await fetchDNS(domain, "TXT");
 const spfRecord = txtRecords.find(r => r.includes("include:sendgrid.net") && r.includes("include:spf.mandrillapp.com"));
 const spfPass = !!spfRecord;
 const spfRaw = txtRecords.find(r => r.includes("spf1")) || noRecord();
-resultsHTML += "<div class='box'>SPF: <span class='" + (spfPass?"pass":"fail") + "'>" + (spfPass?"PASS":"FAIL") + "</span>
-
-<small>Raw value: " + spfRaw + "</small></div>";
+resultsHTML += "<div class='box'>SPF: <span class='" + (spfPass?"pass":"fail") + "'>" + (spfPass?"PASS":"FAIL") + "</span><br><small>Raw value: " + spfRaw + "</small></div>";
 if(!spfPass){ copyable.push("SPF TXT Record:\n(Note: Add to existing SPF, do NOT create new if exists)\n\nType: TXT\nHost: @\nValue: v=spf1 include:sendgrid.net include:spf.mandrillapp.com ~all"); }
 
 // 2. Mandrill Verify
@@ -266,21 +90,13 @@ const mandrillRecords = txtRecords.filter(r => r.startsWith("mandrill_verify"));
 if(mandrillRecords.length > 0){
 const spacingIssue = mandrillRecords.some(r => r !== r.trim());
 if(spacingIssue){
-resultsHTML += "<div class='box'>Mandrill Verify: <span class='fail'>INVALID</span>
-
-<small>Space found in record.</small>
-
-<small>Raw value: " + mandrillRecords.join(", ") + "</small></div>";
+resultsHTML += "<div class='box'>Mandrill Verify: <span class='fail'>INVALID</span><br><small>Space found in record.</small><br><small>Raw value: " + mandrillRecords.join(", ") + "</small></div>";
 nonCopyable.push("Mandrill Verify:\nSpace found in record.\nRaw value: " + mandrillRecords.join(", ") + "\nPlease remove leading/trailing spaces.");
 } else {
-resultsHTML += "<div class='box'>Mandrill Verify: <span class='pass'>PASS</span>
-
-<small>Raw value: " + mandrillRecords.join(", ") + "</small></div>";
+resultsHTML += "<div class='box'>Mandrill Verify: <span class='pass'>PASS</span><br><small>Raw value: " + mandrillRecords.join(", ") + "</small></div>";
 }
 } else {
-resultsHTML += "<div class='box'>Mandrill Verify: <span class='fail'>FAIL</span>
-
-<small>" + noRecord() + "</small></div>";
+resultsHTML += "<div class='box'>Mandrill Verify: <span class='fail'>FAIL</span><br><small>" + noRecord() + "</small></div>";
 nonCopyable.push("Mandrill Verify:\nNo TXT record found.\nPlease log in to Mandrill to retrieve the verification TXT record for this domain.");
 }
 
@@ -294,18 +110,10 @@ const dmarcPass = dmarcRecords.some(r =>
 r.includes("v=DMARC1") && (r.includes("p=none") || r.includes("p=quarantine") || r.includes("p=reject"))
 ) && !dmarcResult.autoAppend && !hasDupDmarc;
 const dmarcAutoWarn = dmarcResult.autoAppend ?
-"
-
-<small style='color:orange;'>⚠️ Auto-appending detected on DMARC record! _dmarc." + domain + "." + domain + " (auto-append detected). Kindly advise to input: _dmarc so it would resolve correctly.</small>" : "";
+"<br><small style='color:orange;'>⚠️ Auto-appending detected on DMARC record!<br>_dmarc." + domain + "." + domain + " (auto-append detected)<br><br>Kindly advise to input:<br>_dmarc<br>So it would resolve correctly.</small>" : "";
 const dmarcDupWarn = hasDupDmarc ?
-"
-
-<small style='color:orange;'>⚠️ Duplicate DMARC record detected! Please remove the duplicate entry and keep only one.</small>" : "";
-resultsHTML += "<div class='box'>DMARC: <span class='" + (dmarcPass?"pass":"fail") + "'>" + (dmarcPass?"PASS":"FAIL") + "</span>" + dmarcAutoWarn + dmarcDupWarn + "
-
-<small>Expected host: _dmarc." + domain + "</small>
-
-<small>Raw value: " + (dmarcRecords.join(", ") || noRecord()) + "</small></div>";
+"<br><small style='color:orange;'>⚠️ Duplicate DMARC record detected! Please remove the duplicate entry and keep only one.</small>" : "";
+resultsHTML += "<div class='box'>DMARC: <span class='" + (dmarcPass?"pass":"fail") + "'>" + (dmarcPass?"PASS":"FAIL") + "</span>" + dmarcAutoWarn + dmarcDupWarn + "<br><small>Expected host: _dmarc." + domain + "</small><br><small>Raw value: " + (dmarcRecords.join(", ") || noRecord()) + "</small></div>";
 if(!dmarcPass){
 const dmarcHostVal = dmarcResult.autoAppend ? "_dmarc" : "_dmarc." + domain;
 if(hasDupDmarc){
@@ -327,26 +135,18 @@ const dkim1Pass = normalizeSingle(dkim1Result.records).includes("dkim1.mandrilla
 const dkim2Pass = normalizeSingle(dkim2Result.records).includes("dkim2.mandrillapp.com") && !dkim2Result.autoAppend && !hasDupDkim2;
 const dkimPass = dkim1Pass && dkim2Pass;
 const dkimAutoWarn = dkimAutoAppend ?
-"
-
-<small style='color:orange;'>⚠️ Auto-appending detected on DKIM records!" +
-(dkim1Result.autoAppend ? " mte1._domainkey." + domain + "." + domain + " (auto-append detected)" : "") +
-(dkim2Result.autoAppend ? " mte2._domainkey." + domain + "." + domain + " (auto-append detected)" : "") +
-" Kindly advise to input mte1._domainkey and mte2._domainkey so it would resolve correctly.</small>" : "";
+"<br><small style='color:orange;'>⚠️ Auto-appending detected on DKIM records! The records are publicly resolving as:" +
+(dkim1Result.autoAppend ? "<br>mte1._domainkey." + domain + "." + domain + " (auto-append detected)" : "") +
+(dkim2Result.autoAppend ? "<br>mte2._domainkey." + domain + "." + domain + " (auto-append detected)" : "") +
+"<br><br>Kindly advise to input:<br>mte1._domainkey<br>mte2._domainkey<br>So it would resolve correctly.</small>" : "";
 const dkimDupWarn = (hasDupDkim1 || hasDupDkim2) ?
-"
-
-<small style='color:orange;'>⚠️ Duplicate DKIM record(s) detected!" +
+"<br><small style='color:orange;'>⚠️ Duplicate DKIM record(s) detected!" +
 (hasDupDkim1 ? " mte1._domainkey." + domain + ": Duplicate detected." : "") +
 (hasDupDkim2 ? " mte2._domainkey." + domain + ": Duplicate detected." : "") +
 " Please remove the duplicate entries and keep only one of each.</small>" : "";
 resultsHTML += "<div class='box'>DKIM: <span class='" + (dkimPass?"pass":"fail") + "'>" + (dkimPass?"PASS":"FAIL") + "</span>" + dkimAutoWarn + dkimDupWarn +
-"
-
-<small>mte1._domainkey." + domain + " -> " + (dkim1Result.autoAppend ? "mte1._domainkey." + domain + "." + domain + " (auto-append detected)" : (dkim1Result.records.join(", ") || noRecord())) + "</small>" +
-"
-
-<small>mte2._domainkey." + domain + " -> " + (dkim2Result.autoAppend ? "mte2._domainkey." + domain + "." + domain + " (auto-append detected)" : (dkim2Result.records.join(", ") || noRecord())) + "</small></div>";
+"<br><small>mte1._domainkey." + domain + " -> " + (dkim1Result.autoAppend ? "mte1._domainkey." + domain + "." + domain + " (auto-append detected)" : (dkim1Result.records.join(", ") || noRecord())) + "</small>" +
+"<br><small>mte2._domainkey." + domain + " -> " + (dkim2Result.autoAppend ? "mte2._domainkey." + domain + "." + domain + " (auto-append detected)" : (dkim2Result.records.join(", ") || noRecord())) + "</small></div>";
 if(!dkimPass){
 let dkimInstructions = "DKIM CNAME Records:\n";
 if(!dkim1Pass){ dkimInstructions += hasDupDkim1 ? "\nmte1._domainkey." + domain + ": Duplicate found. Keep only:\nHost: mte1._domainkey\nValue: dkim1.mandrillapp.com" : "\nType: CNAME\nHost: " + (dkim1Result.autoAppend ? "mte1._domainkey" : "mte1._domainkey." + domain) + "\nValue: dkim1.mandrillapp.com"; }
@@ -372,23 +172,19 @@ const sg1Pass = normalizeCname(sg1Result.records).includes("sg1.domainkey.u11692
 const sg12Pass = normalizeCname(sg12Result.records).includes("sg12.domainkey.u11692406.wl157.sendgrid.net") && !hasDuplicateSg12 && !hasSpaceSg12 && !sg12Result.autoAppend;
 const allCioPass = cioPass && sg1Pass && sg12Pass;
 const sgAutoWarn = sgAutoAppend ?
-"
-
-<small style='color:orange;'>⚠️ Auto-appending detected on SendGrid/CustomerIO records!" +
-(cioResult.autoAppend ? " customerio." + domain + "." + domain + " (auto-append detected)" : "") +
-(sg1Result.autoAppend ? " sg1._domainkey." + domain + "." + domain + " (auto-append detected)" : "") +
-(sg12Result.autoAppend ? " sg12._domainkey." + domain + "." + domain + " (auto-append detected)" : "") +
-" Kindly advise to input short host names so they resolve correctly.</small>" : "";
+"<br><small style='color:orange;'>⚠️ Auto-appending detected on SendGrid/CustomerIO records! The records are publicly resolving as:" +
+(cioResult.autoAppend ? "<br>customerio." + domain + "." + domain + " (auto-append detected)" : "") +
+(sg1Result.autoAppend ? "<br>sg1._domainkey." + domain + "." + domain + " (auto-append detected)" : "") +
+(sg12Result.autoAppend ? "<br>sg12._domainkey." + domain + "." + domain + " (auto-append detected)" : "") +
+"<br><br>Kindly advise to input:" +
+(cioResult.autoAppend ? "<br>customerio" : "") +
+(sg1Result.autoAppend ? "<br>sg1._domainkey" : "") +
+(sg12Result.autoAppend ? "<br>sg12._domainkey" : "") +
+"<br>So it would resolve correctly.</small>" : "";
 resultsHTML += "<div class='box'>CustomerIO/SendGrid: <span class='" + (allCioPass?"pass":"fail") + "'>" + (allCioPass?"PASS":"FAIL") + "</span>" + sgAutoWarn +
-"
-
-<small>customerio." + domain + " -> " + (cioResult.autoAppend ? "customerio." + domain + "." + domain + " (auto-append detected)" : (cioResult.records.join(", ") || noRecord())) + "</small>" +
-"
-
-<small>sg1._domainkey." + domain + " -> " + (sg1Result.autoAppend ? "sg1._domainkey." + domain + "." + domain + " (auto-append detected)" : (sg1Result.records.join(", ") || noRecord())) + "</small>" +
-"
-
-<small>sg12._domainkey." + domain + " -> " + (sg12Result.autoAppend ? "sg12._domainkey." + domain + "." + domain + " (auto-append detected)" : (sg12Result.records.join(", ") || noRecord())) + "</small></div>";
+"<br><small>customerio." + domain + " -> " + (cioResult.autoAppend ? "customerio." + domain + "." + domain + " (auto-append detected)" : (cioResult.records.join(", ") || noRecord())) + "</small>" +
+"<br><small>sg1._domainkey." + domain + " -> " + (sg1Result.autoAppend ? "sg1._domainkey." + domain + "." + domain + " (auto-append detected)" : (sg1Result.records.join(", ") || noRecord())) + "</small>" +
+"<br><small>sg12._domainkey." + domain + " -> " + (sg12Result.autoAppend ? "sg12._domainkey." + domain + "." + domain + " (auto-append detected)" : (sg12Result.records.join(", ") || noRecord())) + "</small></div>";
 if(!allCioPass){
 let msg = "CustomerIO / SendGrid CNAME Records:\n";
 if(!cioPass){ msg += cioResult.autoAppend ? "\nType: CNAME\nHost: customerio\nValue: u11692406.wl157.sendgrid.net" : cioResult.records.length === 0 ? "\nType: CNAME\nHost: customerio." + domain + "\nValue: u11692406.wl157.sendgrid.net" : hasDuplicateCio ? "\ncustomerio." + domain + ": Duplicate records found." : hasSpaceCio ? "\ncustomerio." + domain + ": Space found in record." : "\ncustomerio." + domain + ": Incorrect value - expected u11692406.wl157.sendgrid.net"; }
@@ -399,39 +195,7 @@ nonCopyable.push(msg.trim());
 
 // Global auto-append banner
 if(globalAutoAppend){
-resultsHTML = "<div class='box' style='border-color:orange; background:#fff8e1;'>⚠️ <strong>Heads Up — Auto-Appending Detected on this Domain!</strong>
-
-When DNS records are added by the broker's DNS provider, the provider is <strong>automatically appending the domain name to the end</strong> of the host value entered. This behaviour is known as <strong>Auto-Appending</strong>.
-
-This means that if the full domain is included in the host field, the provider will append it again — resulting in a doubled-up host that will not resolve correctly publicly, even though it appears correct in the DNS panel.
-
-<a href='#' onclick='toggleAutoAppend(event)' id='autoAppendToggle' style='color:orange; font-size:13px;'>▼ Show more</a><div id='autoAppendDetails' style='display:none; margin-top:10px;'><strong>Here is a simple example of what is happening:</strong>
-
-The broker's domain is <em>" + domain + "</em> and the DNS record was entered with the full host value of:
-
-<code>mte1._domainkey." + domain + "</code>
-
-Because the DNS provider is auto-appending, it automatically added the domain to the end, resulting in:
-
-<code>mte1._domainkey." + domain + "." + domain + "</code> ❌
-
-This appears correct in the broker's DNS panel but is actually resolving incorrectly publicly — which is why the records are failing validation.
-
-<strong>What needs to be corrected:</strong>
-
-When adding DNS records, the broker's IT team or DNS provider should use the <strong>short host name only</strong> — without the domain name at the end.
-
-For example, instead of entering:
-
-<code>mte1._domainkey." + domain + "</code>
-
-It should be entered as:
-
-<code>mte1._domainkey</code> ✅
-
-The DNS provider will handle the rest and the record will correctly resolve to <code>mte1._domainkey." + domain + "</code>.
-
-<strong>This applies to ALL DNS records</strong> — including DKIM, SendGrid, CustomerIO and DMARC.</div></div>" + resultsHTML;
+resultsHTML = "<div class='box' style='border-color:orange; background:#fff8e1;'>⚠️ <strong>Heads Up — Auto-Appending Detected on this Domain!</strong><br><br>When DNS records are added by the broker's DNS provider, the provider is <strong>automatically appending the domain name to the end</strong> of the host value entered. This behaviour is known as <strong>Auto-Appending</strong>.<br><br>This means that if the full domain is included in the host field, the provider will append it again — resulting in a doubled-up host that will not resolve correctly publicly, even though it appears correct in the DNS panel.<br><br><a href='#' onclick='toggleAutoAppend(event)' id='autoAppendToggle' style='color:orange; font-size:13px;'>▼ Show more</a><div id='autoAppendDetails' style='display:none; margin-top:10px;'><strong>Here is a simple example of what is happening:</strong><br>The broker's domain is <em>" + domain + "</em> and the DNS record was entered with the full host value of:<br>`mte1._domainkey." + domain + "`<br><br>Because the DNS provider is auto-appending, it automatically added the domain to the end, resulting in:<br>`mte1._domainkey." + domain + "." + domain + "` ❌<br><br>This appears correct in the broker's DNS panel but is actually resolving incorrectly publicly — which is why the records are failing validation.<br><br><strong>What needs to be corrected:</strong><br>When adding DNS records, the broker's IT team or DNS provider should use the <strong>short host name only</strong> — without the domain name at the end. The DNS provider will automatically append the domain.<br><br>For example, instead of entering:<br>`mte1._domainkey." + domain + "`<br>It should be entered as:<br>`mte1._domainkey` ✅<br><br>The DNS provider will handle the rest and the record will correctly resolve to `mte1._domainkey." + domain + "`.<br><br><strong>This applies to ALL DNS records</strong> — including DKIM, SendGrid, CustomerIO and DMARC.</div></div>" + resultsHTML;
 }
 
 } catch(e){
