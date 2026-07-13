@@ -115,14 +115,12 @@ const dmarcDupWarn = hasDupDmarc ? "
 <small style='color:orange;'>⚠️ Duplicate DMARC record detected! Please remove the duplicate entry and keep only one.</small>" : ""; const dmarcDupPolicyWarn = hasDupPolicy ? "
 <small style='color:orange;'>⚠️ Conflicting DMARC policies detected! Multiple p= values found: " + dmarcPolicyMatches.join(", ") + ". A DMARC record must only have one p= policy. Please remove the conflicting entries and keep only one.</small>" : ""; const dmarcInvalidTagWarn = hasInvalidTag ? "
 <small style='color:orange;'>⚠️ Invalid tag detected: <strong>t=n</strong> is not a recognised DMARC tag and must be removed from the record.</small>" : "";
-"<br><small style='color:orange;'>⚠️ Duplicate DMARC record detected! Please remove the duplicate entry and keep only one.</small>" : "";
 resultsHTML += "<div class='box'>DMARC: <span class='" + (dmarcPass?"pass":"fail") + "'>" + (dmarcPass?"PASS":"FAIL") + "</span>" + dmarcAutoWarn + dmarcDupWarn + dmarcDupPolicyWarn + dmarcInvalidTagWarn + "
 <small>Expected host: _dmarc." + domain + "</small>
 <small>Raw value: " + (dmarcRecords.join(", ") || noRecord()) + "</small></div>";
 if(!dmarcPass){
 const dmarcHostVal = dmarcResult.autoAppend ? "_dmarc" : "_dmarc." + domain;
 if(hasDupDmarc){ copyable.push("DMARC TXT Record - Duplicate Detected:\n\nA duplicate DMARC record was found. Please remove one of the duplicate entries and keep only:\n\nType: TXT\nHost: _dmarc\nValue: v=DMARC1; p=none;"); } else if(hasDupPolicy){ copyable.push("DMARC TXT Record - Conflicting Policies Detected:\n\nMultiple p= policy values were found: " + dmarcPolicyMatches.join(", ") + ".\nA DMARC record must only contain one p= policy.\nPlease update your DMARC record to keep only one policy value:\n\nType: TXT\nHost: _dmarc\nValue: v=DMARC1; p=none;"); } else if(hasInvalidTag){ copyable.push("DMARC TXT Record - Invalid Tag Detected:\n\nThe tag t=n was found in your DMARC record. This is not a recognised DMARC tag and must be removed.\nPlease update your DMARC record to:\n\nType: TXT\nHost: _dmarc\nValue: v=DMARC1; p=none;");
-copyable.push("DMARC TXT Record - Duplicate Detected:\n\nA duplicate DMARC record was found. Please remove one of the duplicate entries and keep only:\n\nType: TXT\nHost: _dmarc\nValue: v=DMARC1; p=none;");
 } else {
 copyable.push("DMARC TXT Record:\n\nType: TXT\nHost: " + dmarcHostVal + "\nValue: v=DMARC1; p=none;");
 }
