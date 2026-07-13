@@ -41,7 +41,7 @@ Powered by MyCRM Technology Support
 </div>
 <script>
 async function fetchDNS(name, type){
-const url = "<REDACTED> + name + "&type=" + type;
+const base = "<REDACTED> + "cloudflare-dns.com/dns-query"; const url = base + "?name=" + name + "&type=" + type;
 const res = await fetch(url, { headers: { "Accept": "application/dns-json" } });
 const data = await res.json();
 return data.Answer ? data.Answer.map(r => r.data.replace(/"/g, "")) : [];
