@@ -112,20 +112,24 @@ async function checkDNS(){
       .flatMap(r => dmarcPolicies.filter(p => r.includes(p)));
     const hasDupPolicy = dmarcPolicyMatches.length > 1;
     const hasInvalidTag = dmarcRecords.some(r => /\bt=n\b/.test(r));
+    const hasLabelPrefix = dmarcRecords.some(r => !r.trim().replace(/^["']/, "").startsWith("v=DMARC1"));
     const dmarcPass = dmarcRecords.some(r =>
       r.includes("v=DMARC1") && (r.includes("p=none") || r.includes("p=quarantine") || r.includes("p=reject"))
-    ) && !dmarcResult.autoAppend && !hasDupDmarc && !hasDupPolicy && !hasInvalidTag;
+    ) && !dmarcResult.autoAppend && !hasDupDmarc && !hasDupPolicy && !hasInvalidTag && !hasLabelPrefix;
+
+    const dmarcLabelWarn = hasLabelPrefix ?
+      "<br><small style='color:orange;'>:warning: Malformed DMARC value detected! The record includes a label prefix (e.g. 'Value: ') before 'v=DMARC1'. The DNS value must start exactly with 'v=DMARC1' and contain no extra text.</small>" : "";
 
     const dmarcAutoWarn = dmarcResult.autoAppend ?
-      "<br><small style='color:orange;'>⚠️ Auto-appending detected on DMARC record!<br>_dmarc." + domain + "." + domain + " (auto-append detected)<br><br>Kindly advise to input:<br>_dmarc<br>So it would resolve correctly.</small>" : "";
+      "<br><small style='color:orange;'>:warning: Auto-appending detected on DMARC record!<br>_dmarc." + domain + "." + domain + " (auto-append detected)<br><br>Kindly advise to input:<br>_dmarc<br>So it would resolve correctly.</small>" : "";
     const dmarcDupWarn = hasDupDmarc ?
-      "<br><small style='color:orange;'>⚠️ Duplicate DMARC record detected! Please remove the duplicate entry and keep only one.</small>" : "";
+      "<br><small style='color:orange;'>:warning: Duplicate DMARC record detected! Please remove the duplicate entry and keep only one.</small>" : "";
     const dmarcDupPolicyWarn = hasDupPolicy ?
-      "<br><small style='color:orange;'>⚠️ Conflicting DMARC policies detected! Multiple p= values found: " + dmarcPolicyMatches.join(", ") + ". A DMARC record must only have one p= policy.</small>" : "";
+      "<br><small style='color:orange;'>:warning: Conflicting DMARC policies detected! Multiple p= values found: " + dmarcPolicyMatches.join(", ") + ". A DMARC record must only have one p= policy.</small>" : "";
     const dmarcInvalidTagWarn = hasInvalidTag ?
-      "<br><small style='color:orange;'>⚠️ Invalid tag detected: <strong>t=n</strong> is not a recognised DMARC tag and must be removed.</small>" : "";
+      "<br><small style='color:orange;'>:warning: Invalid tag detected: <strong>t=n</strong> is not a recognised DMARC tag and must be removed.</small>" : "";
 
-    resultsHTML += "<div class='box'>DMARC: <span class='" + (dmarcPass?"pass":"fail") + "'>" + (dmarcPass?"PASS":"FAIL") + "</span>" + dmarcAutoWarn + dmarcDupWarn + dmarcDupPolicyWarn + dmarcInvalidTagWarn + "<br><small>Expected host: _dmarc." + domain + "</small><br><small>Raw value: " + (dmarcRecords.join(", ") || noRecord()) + "</small></div>";
+    resultsHTML += "<div class='box'>DMARC: <span class='" + (dmarcPass?"pass":"fail") + "'>" + (dmarcPass?"PASS":"FAIL") + "</span>" + dmarcAutoWarn + dmarcDupWarn + dmarcDupPolicyWarn + dmarcInvalidTagWarn + dmarcLabelWarn + "<br><small>Expected host: _dmarc." + domain + "</small><br><small>Raw value: " + (dmarcRecords.join(", ") || noRecord()) + "</small></div>";
 
     if(!dmarcPass){
       const dmarcHostVal = dmarcResult.autoAppend ? "_dmarc" : "_dmarc." + domain;
@@ -135,6 +139,8 @@ async function checkDNS(){
         copyable.push("DMARC TXT Record - Conflicting Policies Detected:\n\nMultiple p= policy values were found: " + dmarcPolicyMatches.join(", ") + ".\nPlease update your DMARC record to keep only one policy value:\n\nType: TXT\nHost: _dmarc\nValue: v=DMARC1; p=none;");
       } else if(hasInvalidTag){
         copyable.push("DMARC TXT Record - Invalid Tag Detected:\n\nThe tag t=n was found in your DMARC record. This is not a recognised DMARC tag and must be removed.\nPlease update your DMARC record to:\n\nType: TXT\nHost: _dmarc\nValue: v=DMARC1; p=none;");
+      } else if(hasLabelPrefix){
+        copyable.push("DMARC TXT Record - Malformed Value Detected:\n\nYour DMARC record's value includes an extra label (e.g. 'Value: ') before the actual DMARC syntax, which causes validation to fail even though the DMARC syntax itself is correct.\nPlease update it to:\n\nType: TXT\nHost: _dmarc\nValue: v=DMARC1; p=none;");
       } else {
         copyable.push("DMARC TXT Record:\n\nType: TXT\nHost: " + dmarcHostVal + "\nValue: v=DMARC1; p=none;");
       }
@@ -152,12 +158,12 @@ async function checkDNS(){
     const dkim2Pass = normalizeSingle(dkim2Result.records).includes("dkim2.mandrillapp.com") && !dkim2Result.autoAppend && !hasDupDkim2;
     const dkimPass = dkim1Pass && dkim2Pass;
     const dkimAutoWarn = dkimAutoAppend ?
-      "<br><small style='color:orange;'>⚠️ Auto-appending detected on DKIM records! The records are publicly resolving as:" +
+      "<br><small style='color:orange;'>:warning: Auto-appending detected on DKIM records! The records are publicly resolving as:" +
       (dkim1Result.autoAppend ? "<br>mte1._domainkey." + domain + "." + domain + " (auto-append detected)" : "") +
       (dkim2Result.autoAppend ? "<br>mte2._domainkey." + domain + "." + domain + " (auto-append detected)" : "") +
       "<br><br>Kindly advise to input:<br>mte1._domainkey<br>mte2._domainkey<br>So it would resolve correctly.</small>" : "";
     const dkimDupWarn = (hasDupDkim1 || hasDupDkim2) ?
-      "<br><small style='color:orange;'>⚠️ Duplicate DKIM record(s) detected!" +
+      "<br><small style='color:orange;'>:warning: Duplicate DKIM record(s) detected!" +
       (hasDupDkim1 ? " mte1._domainkey." + domain + ": Duplicate detected." : "") +
       (hasDupDkim2 ? " mte2._domainkey." + domain + ": Duplicate detected." : "") +
       " Please remove the duplicate entries and keep only one of each.</small>" : "";
@@ -189,7 +195,7 @@ async function checkDNS(){
     const sg12Pass = normalizeCname(sg12Result.records).includes("sg12.domainkey.u11692406.wl157.sendgrid.net") && !hasDuplicateSg12 && !hasSpaceSg12 && !sg12Result.autoAppend;
     const allCioPass = cioPass && sg1Pass && sg12Pass;
     const sgAutoWarn = sgAutoAppend ?
-      "<br><small style='color:orange;'>⚠️ Auto-appending detected on SendGrid/CustomerIO records! The records are publicly resolving as:" +
+      "<br><small style='color:orange;'>:warning: Auto-appending detected on SendGrid/CustomerIO records! The records are publicly resolving as:" +
       (cioResult.autoAppend ? "<br>customerio." + domain + "." + domain + " (auto-append detected)" : "") +
       (sg1Result.autoAppend ? "<br>sg1._domainkey." + domain + "." + domain + " (auto-append detected)" : "") +
       (sg12Result.autoAppend ? "<br>sg12._domainkey." + domain + "." + domain + " (auto-append detected)" : "") +
@@ -212,7 +218,7 @@ async function checkDNS(){
 
     // Global auto-append banner
     if(globalAutoAppend){
-      resultsHTML = "<div class='box' style='border-color:orange; background:#fff8e1;'>⚠️ <strong>Heads Up — Auto-Appending Detected on this Domain!</strong><br><br>When DNS records are added by the broker's DNS provider, the provider is <strong>automatically appending the domain name to the end</strong> of the host value entered. This behaviour is known as <strong>Auto-Appending</strong>.<br><br>This means that if the full domain is included in the host field, the provider will append it again — resulting in a doubled-up host that will not resolve correctly publicly, even though it appears correct in the DNS panel.<br><br><a href='#' onclick='toggleAutoAppend(event)' id='autoAppendToggle' style='color:orange; font-size:13px;'>▼ Show more</a><div id='autoAppendDetails' style='display:none; margin-top:10px;'><strong>Here is a simple example of what is happening:</strong><br>The broker's domain is <em>" + domain + "</em> and the DNS record was entered with the full host value of:<br>`mte1._domainkey." + domain + "`<br><br>Because the DNS provider is auto-appending, it automatically added the domain to the end, resulting in:<br>`mte1._domainkey." + domain + "." + domain + "` ❌<br><br>This appears correct in the broker's DNS panel but is actually resolving incorrectly publicly — which is why the records are failing validation.<br><br><strong>What needs to be corrected:</strong><br>When adding DNS records, the broker's IT team or DNS provider should use the <strong>short host name only</strong> — without the domain name at the end. The DNS provider will automatically append the domain.<br><br>For example, instead of entering:<br>`mte1._domainkey." + domain + "`<br>It should be entered as:<br>`mte1._domainkey` ✅<br><br>The DNS provider will handle the rest and the record will correctly resolve to `mte1._domainkey." + domain + "`.<br><br><strong>This applies to ALL DNS records</strong> — including DKIM, SendGrid, CustomerIO and DMARC.</div></div>" + resultsHTML;
+      resultsHTML = "<div class='box' style='border-color:orange; background:#fff8e1;'>:warning: <strong>Heads Up — Auto-Appending Detected on this Domain!</strong><br><br>When DNS records are added by the broker's DNS provider, the provider is <strong>automatically appending the domain name to the end</strong> of the host value entered. This behaviour is known as <strong>Auto-Appending</strong>.<br><br>This means that if the full domain is included in the host field, the provider will append it again — resulting in a doubled-up host that will not resolve correctly publicly, even though it appears correct in the DNS panel.<br><br><a href='#' onclick='toggleAutoAppend(event)' id='autoAppendToggle' style='color:orange; font-size:13px;'>▼ Show more</a><div id='autoAppendDetails' style='display:none; margin-top:10px;'><strong>Here is a simple example of what is happening:</strong><br>The broker's domain is <em>" + domain + "</em> and the DNS record was entered with the full host value of:<br>`mte1._domainkey." + domain + "`<br><br>Because the DNS provider is auto-appending, it automatically added the domain to the end, resulting in:<br>`mte1._domainkey." + domain + "." + domain + "` :x:<br><br>This appears correct in the broker's DNS panel but is actually resolving incorrectly publicly — which is why the records are failing validation.<br><br><strong>What needs to be corrected:</strong><br>When adding DNS records, the broker's IT team or DNS provider should use the <strong>short host name only</strong> — without the domain name at the end. The DNS provider will automatically append the domain.<br><br>For example, instead of entering:<br>`mte1._domainkey." + domain + "`<br>It should be entered as:<br>`mte1._domainkey` :white_check_mark:<br><br>The DNS provider will handle the rest and the record will correctly resolve to `mte1._domainkey." + domain + "`.<br><br><strong>This applies to ALL DNS records</strong> — including DKIM, SendGrid, CustomerIO and DMARC.</div></div>" + resultsHTML;
     }
 
   } catch(e){
