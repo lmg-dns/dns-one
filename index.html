@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html>
 <head>
@@ -27,7 +28,7 @@ pre { background: #eee; padding: 10px; border-radius: 4px; white-space: pre-wrap
 <div id="results"></div>
 <div style="margin-top:40px; font-size:14px; color:#555; text-align:center;">
   Powered by MyCRM Technology Support
-  <div style="margin-top:10px; font-size:11px; color:#aaa; text-align:center;">v1.6.2</div>
+  <div style="margin-top:10px; font-size:11px; color:#aaa; text-align:center;">v1.7.0</div>
 </div>
 <div id="instructions-copyable" class="instructions" style="display:none;">
   <p style="font-size:16px; font-weight:bold; margin-top:0;">DNS Records Instructions (Copy &amp; Apply)</p>
@@ -113,9 +114,9 @@ async function checkDNS(){
     const hasDupPolicy = dmarcPolicyMatches.length > 1;
     const hasInvalidTag = dmarcRecords.some(r => /\bt=n\b/.test(r));
     const hasLabelPrefix = dmarcRecords.some(r => !r.trim().replace(/^["']/, "").startsWith("v=DMARC1"));
-    const dmarcPass = dmarcRecords.some(r =>
-      r.includes("v=DMARC1") && (r.includes("p=none") || r.includes("p=quarantine") || r.includes("p=reject"))
-    ) && !dmarcResult.autoAppend && !hasDupDmarc && !hasDupPolicy && !hasInvalidTag && !hasLabelPrefix;
+    const hasNonePolicy = dmarcRecords.some(r => r.includes("v=DMARC1") && r.includes("p=none"));
+    const hasWrongPolicy = dmarcRecords.some(r => r.includes("v=DMARC1") && (r.includes("p=quarantine") || r.includes("p=reject")));
+    const dmarcPass = hasNonePolicy && !hasWrongPolicy && !dmarcResult.autoAppend && !hasDupDmarc && !hasDupPolicy && !hasInvalidTag && !hasLabelPrefix;
 
     const dmarcLabelWarn = hasLabelPrefix ?
       "<br><small style='color:orange;'>:warning: Malformed DMARC value detected! The record includes a label prefix (e.g. 'Value: ') before 'v=DMARC1'. The DNS value must start exactly with 'v=DMARC1' and contain no extra text.</small>" : "";
@@ -128,8 +129,10 @@ async function checkDNS(){
       "<br><small style='color:orange;'>:warning: Conflicting DMARC policies detected! Multiple p= values found: " + dmarcPolicyMatches.join(", ") + ". A DMARC record must only have one p= policy.</small>" : "";
     const dmarcInvalidTagWarn = hasInvalidTag ?
       "<br><small style='color:orange;'>:warning: Invalid tag detected: <strong>t=n</strong> is not a recognised DMARC tag and must be removed.</small>" : "";
+    const dmarcWrongPolicyWarn = (hasWrongPolicy && !hasDupPolicy) ?
+      "<br><small style='color:orange;'>:warning: DMARC policy is not set to p=none. Note that p=quarantine and p=reject are both valid DMARC policies, but p=none is recommended as the optimal setting since it does not risk causing email bounces.</small>" : "";
 
-    resultsHTML += "<div class='box'>DMARC: <span class='" + (dmarcPass?"pass":"fail") + "'>" + (dmarcPass?"PASS":"FAIL") + "</span>" + dmarcAutoWarn + dmarcDupWarn + dmarcDupPolicyWarn + dmarcInvalidTagWarn + dmarcLabelWarn + "<br><small>Expected host: _dmarc." + domain + "</small><br><small>Raw value: " + (dmarcRecords.join(", ") || noRecord()) + "</small></div>";
+    resultsHTML += "<div class='box'>DMARC: <span class='" + (dmarcPass?"pass":"fail") + "'>" + (dmarcPass?"PASS":"FAIL") + "</span>" + dmarcAutoWarn + dmarcDupWarn + dmarcDupPolicyWarn + dmarcInvalidTagWarn + dmarcWrongPolicyWarn + dmarcLabelWarn + "<br><small>Expected host: _dmarc." + domain + "</small><br><small>Raw value: " + (dmarcRecords.join(", ") || noRecord()) + "</small></div>";
 
     if(!dmarcPass){
       const dmarcHostVal = dmarcResult.autoAppend ? "_dmarc" : "_dmarc." + domain;
@@ -141,6 +144,8 @@ async function checkDNS(){
         copyable.push("DMARC TXT Record - Invalid Tag Detected:\n\nThe tag t=n was found in your DMARC record. This is not a recognised DMARC tag and must be removed.\nPlease update your DMARC record to:\n\nType: TXT\nHost: _dmarc\nValue: v=DMARC1; p=none;");
       } else if(hasLabelPrefix){
         copyable.push("DMARC TXT Record - Malformed Value Detected:\n\nYour DMARC record's value includes an extra label (e.g. 'Value: ') before the actual DMARC syntax, which causes validation to fail even though the DMARC syntax itself is correct.\nPlease update it to:\n\nType: TXT\nHost: _dmarc\nValue: v=DMARC1; p=none;");
+      } else if(hasWrongPolicy){
+        copyable.push("DMARC TXT Record - Incorrect Policy Detected:\n\nYour DMARC record's policy is not set to p=none. Only p=none is accepted.\nPlease update your DMARC record to:\n\nType: TXT\nHost: _dmarc\nValue: v=DMARC1; p=none;");
       } else {
         copyable.push("DMARC TXT Record:\n\nType: TXT\nHost: " + dmarcHostVal + "\nValue: v=DMARC1; p=none;");
       }
