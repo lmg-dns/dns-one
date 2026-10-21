@@ -28,7 +28,7 @@ pre { background: #eee; padding: 10px; border-radius: 4px; white-space: pre-wrap
 <div id="results"></div>
 <div style="margin-top:40px; font-size:14px; color:#555; text-align:center;">
   Powered by MyCRM Technology Support
-  <div style="margin-top:10px; font-size:11px; color:#aaa; text-align:center;">v1.7.1</div>
+  <div style="margin-top:10px; font-size:11px; color:#aaa; text-align:center;">v1.9.1</div>
 </div>
 <div id="instructions-copyable" class="instructions" style="display:none;">
   <p style="font-size:16px; font-weight:bold; margin-top:0;">DNS Records Instructions (Copy &amp; Apply)</p>
@@ -76,15 +76,23 @@ async function checkDNS(){
   const copyable = [];
   const nonCopyable = [];
   let globalAutoAppend = false;
+  let mandrillOk = false;
+  let sendgridOk = false;
   try{
     const txtRecords = await fetchDNS(domain, "TXT");
 
     // 1. SPF
     const spfRecord = txtRecords.find(r => r.includes("include:sendgrid.net") && r.includes("include:spf.mandrillapp.com"));
-    const spfPass = !!spfRecord;
     const spfRaw = txtRecords.find(r => r.includes("spf1")) || noRecord();
-    resultsHTML += "<div class='box'>SPF: <span class='" + (spfPass?"pass":"fail") + "'>" + (spfPass?"PASS":"FAIL") + "</span><br><small>Raw value: " + spfRaw + "</small></div>";
-    if(!spfPass){ copyable.push("SPF TXT Record:\n(Note: Add to existing SPF, do NOT create new if exists)\n\nType: TXT\nHost: @\nValue: v=spf1 include:sendgrid.net include:spf.mandrillapp.com ~all"); }
+    const isManagedSpf = !spfRecord && /include:[^\s"]*easydmarc\.pro/i.test(spfRaw);
+    const spfPass = !!spfRecord;
+    if(isManagedSpf){
+      resultsHTML += "<div class='box'>SPF: <span class='warn'>MANAGED BY EASYDMARC</span><br><small>The SPF record includes an EasyDMARC-hosted SPF list, so SendGrid and Mandrill cannot be verified by name here. Please check the sending sources in EasyDMARC.</small><br><small>Raw value: " + spfRaw + "</small></div>";
+      nonCopyable.push("SPF:\nThe SPF record is managed by EasyDMARC (hosted SPF include). Do not edit or replace the root SPF record, and do not add a second SPF record.\nPlease confirm that SendGrid and Mandrill are authorised as sending sources in the EasyDMARC dashboard.");
+    } else {
+      resultsHTML += "<div class='box'>SPF: <span class='" + (spfPass?"pass":"fail") + "'>" + (spfPass?"PASS":"FAIL") + "</span><br><small>Raw value: " + spfRaw + "</small></div>";
+      if(!spfPass){ copyable.push("SPF TXT Record:\n(Note: Add to existing SPF, do NOT create new if exists)\n\nType: TXT\nHost: @\nValue: v=spf1 include:sendgrid.net include:spf.mandrillapp.com ~all"); }
+    }
 
     // 2. Mandrill Verify
     const mandrillRecords = txtRecords.filter(r => r.startsWith("mandrill_verify"));
@@ -95,17 +103,21 @@ async function checkDNS(){
         nonCopyable.push("Mandrill Verify:\nSpace found in record.\nRaw value: " + mandrillRecords.join(", ") + "\nPlease remove leading/trailing spaces.");
       } else {
         resultsHTML += "<div class='box'>Mandrill Verify: <span class='pass'>PASS</span><br><small>Raw value: " + mandrillRecords.join(", ") + "</small></div>";
+        mandrillOk = true;
       }
     } else {
-      resultsHTML += "<div class='box'>Mandrill Verify: <span class='fail'>FAIL</span><br><small>" + noRecord() + "</small></div>";
-      nonCopyable.push("Mandrill Verify:\nNo TXT record found.\nPlease log in to Mandrill to retrieve the verification TXT record for this domain.");
+      resultsHTML += "<div class='box'>Mandrill Verify: <span class='warn'>CHECK IN MANDRILL</span><br><small>" + noRecord() + " This does not necessarily mean the domain is unverified. Please check Mandrill.</small></div>";
+      nonCopyable.push("Mandrill Verify:\nNo verification TXT record was found in DNS. This does not necessarily mean the domain is unverified, as the record may have been validated before.\nPlease log in to Mandrill to check if the record has been verified, else retrieve the verification TXT record for this domain from Mandrill.");
     }
 
     // 3. DMARC
     const dmarcHost = "_dmarc." + domain;
     const dmarcResult = await checkAutoAppend(dmarcHost, "TXT", domain);
     if(dmarcResult.autoAppend) globalAutoAppend = true;
-    const dmarcRecords = dmarcResult.records;
+    const isCnameTarget = r => /^[A-Za-z0-9_.\-]+\.?$/.test(r.trim()) && !r.includes("=");
+    const dmarcCnameTargets = dmarcResult.records.filter(isCnameTarget);
+    const dmarcDelegated = dmarcCnameTargets.length > 0;
+    const dmarcRecords = dmarcResult.records.filter(r => !isCnameTarget(r));
     const hasDupDmarc = dmarcRecords.length !== new Set(dmarcRecords).size;
     const dmarcPolicies = ["p=none", "p=quarantine", "p=reject"];
     const dmarcPolicyMatches = dmarcRecords
@@ -117,6 +129,9 @@ async function checkDNS(){
     const hasNonePolicy = dmarcRecords.some(r => r.includes("v=DMARC1") && r.includes("p=none"));
     const hasWrongPolicy = dmarcRecords.some(r => r.includes("v=DMARC1") && (r.includes("p=quarantine") || r.includes("p=reject")));
     const dmarcPass = hasNonePolicy && !hasWrongPolicy && !dmarcResult.autoAppend && !hasDupDmarc && !hasDupPolicy && !hasInvalidTag && !hasLabelPrefix;
+
+    const dmarcDelegatedNote = dmarcDelegated ?
+      "<br><small style='color:#555;'>ℹ️ DMARC is delegated via CNAME to " + dmarcCnameTargets.join(", ") + " (third-party DMARC service). The policy is managed in that service, not in this domain's DNS.</small>" : "";
 
     const dmarcLabelWarn = hasLabelPrefix ?
       "<br><small style='color:orange;'>⚠️ Malformed DMARC value detected! The record includes a label prefix (e.g. 'Value: ') before 'v=DMARC1'. The DNS value must start exactly with 'v=DMARC1' and contain no extra text.</small>" : "";
@@ -130,11 +145,13 @@ async function checkDNS(){
     const dmarcInvalidTagWarn = hasInvalidTag ?
       "<br><small style='color:orange;'>⚠️ Invalid tag detected: <strong>t=n</strong> is not a recognised DMARC tag and must be removed.</small>" : "";
     const dmarcWrongPolicyWarn = (hasWrongPolicy && !hasDupPolicy) ?
-      "<br><small style='color:orange;'>⚠️ DMARC policy is not set to p=none. Note that p=quarantine and p=reject are both valid DMARC policies, but p=none is recommended as the optimal setting since it does not risk causing email bounces.</small>" : "";
+      "<br><small style='color:orange;'>⚠️ DMARC policy is not set to p=none. Note that p=quarantine and p=reject are both valid DMARC policies.</small>" : "";
 
-    resultsHTML += "<div class='box'>DMARC: <span class='" + (dmarcPass?"pass":"fail") + "'>" + (dmarcPass?"PASS":"FAIL") + "</span>" + dmarcAutoWarn + dmarcDupWarn + dmarcDupPolicyWarn + dmarcInvalidTagWarn + dmarcWrongPolicyWarn + dmarcLabelWarn + "<br><small>Expected host: _dmarc." + domain + "</small><br><small>Raw value: " + (dmarcRecords.join(", ") || noRecord()) + "</small></div>";
+    resultsHTML += "<div class='box'>DMARC: <span class='" + (dmarcPass?"pass":"fail") + "'>" + (dmarcPass?"PASS":"FAIL") + "</span>" + dmarcAutoWarn + dmarcDupWarn + dmarcDupPolicyWarn + dmarcInvalidTagWarn + dmarcWrongPolicyWarn + dmarcLabelWarn + dmarcDelegatedNote + "<br><small>Expected host: _dmarc." + domain + "</small><br><small>Raw value: " + (dmarcResult.records.join(", ") || noRecord()) + "</small></div>";
 
-    if(!dmarcPass){
+    if(!dmarcPass && dmarcDelegated){
+      nonCopyable.push("DMARC (delegated via CNAME):\n_dmarc." + domain + " points to " + dmarcCnameTargets.join(", ") + ".\nDo NOT add a DMARC TXT record at _dmarc, as a CNAME and a TXT record cannot exist on the same host.\nPlease review the DMARC policy in the DMARC service's dashboard and make sure SendGrid and Mandrill are authorised senders.");
+    } else if(!dmarcPass){
       const dmarcHostVal = dmarcResult.autoAppend ? "_dmarc" : "_dmarc." + domain;
       if(hasDupDmarc){
         copyable.push("DMARC TXT Record - Duplicate Detected:\n\nA duplicate DMARC record was found. Please remove one of the duplicate entries and keep only:\n\nType: TXT\nHost: _dmarc\nValue: v=DMARC1; p=none;");
@@ -218,7 +235,16 @@ async function checkDNS(){
       if(!cioPass){ msg += cioResult.autoAppend ? "\nType: CNAME\nHost: customerio\nValue: u11692406.wl157.sendgrid.net" : cioResult.records.length === 0 ? "\nType: CNAME\nHost: customerio." + domain + "\nValue: u11692406.wl157.sendgrid.net" : hasDuplicateCio ? "\ncustomerio." + domain + ": Duplicate records found." : hasSpaceCio ? "\ncustomerio." + domain + ": Space found in record." : "\ncustomerio." + domain + ": Incorrect value - expected u11692406.wl157.sendgrid.net"; }
       if(!sg1Pass){ msg += sg1Result.autoAppend ? "\n\nType: CNAME\nHost: sg1._domainkey\nValue: sg1.domainkey.u11692406.wl157.sendgrid.net" : sg1Result.records.length === 0 ? "\n\nType: CNAME\nHost: sg1._domainkey." + domain + "\nValue: sg1.domainkey.u11692406.wl157.sendgrid.net" : hasDuplicateSg1 ? "\nsg1._domainkey." + domain + ": Duplicate records found." : hasSpaceSg1 ? "\nsg1._domainkey." + domain + ": Space found in record." : "\nsg1._domainkey." + domain + ": Incorrect value - expected sg1.domainkey.u11692406.wl157.sendgrid.net"; }
       if(!sg12Pass){ msg += sg12Result.autoAppend ? "\n\nType: CNAME\nHost: sg12._domainkey\nValue: sg12.domainkey.u11692406.wl157.sendgrid.net" : sg12Result.records.length === 0 ? "\n\nType: CNAME\nHost: sg12._domainkey." + domain + "\nValue: sg12.domainkey.u11692406.wl157.sendgrid.net" : hasDuplicateSg12 ? "\nsg12._domainkey." + domain + ": Duplicate records found." : hasSpaceSg12 ? "\nsg12._domainkey." + domain + ": Space found in record." : "\nsg12._domainkey." + domain + ": Incorrect value - expected sg12.domainkey.u11692406.wl157.sendgrid.net"; }
-      nonCopyable.push(msg.trim());
+      copyable.push(msg.trim());
+    } else {
+      sendgridOk = true;
+    }
+    if(mandrillOk && sendgridOk){
+      nonCopyable.push("Mandrill / SendGrid:\nThe Mandrill TXT record and the CustomerIO / SendGrid CNAME records are present in DNS. If the issue persists, please log in to Mandrill and SendGrid and check that the domain has been validated in both.");
+    } else if(mandrillOk){
+      nonCopyable.push("Mandrill Verify:\nThe TXT record is present in DNS. If the issue persists, please log in to Mandrill and check that the domain has been validated there.");
+    } else if(sendgridOk){
+      nonCopyable.push("CustomerIO / SendGrid:\nThe CNAME records are present in DNS. If the issue persists, please log in to SendGrid and check that the records have been validated there.");
     }
 
     // Global auto-append banner
